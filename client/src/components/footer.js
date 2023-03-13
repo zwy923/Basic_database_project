@@ -9,8 +9,8 @@ function Copyright() {
   return (
     <Typography variant="body2" color="text.secondary" align="center">
       {'Copyright © '}
-      <Link color="inherit" href="https://github.com/zwy923/hebut-tieba">
-        HebutBa
+      <Link color="inherit" href="https://github.com/zwy923/Basic_database_project">
+        Basic_database
       </Link>{' '}
       {new Date().getFullYear()}
       {'.'}

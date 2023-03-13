@@ -268,7 +268,7 @@ export default function Header({ isLoggedIn, onLogout, token}) {
             component="div"
             sx={{ display: { xs: 'none', sm: 'block' } }}
           >
-            HEBUT
+            CODE
           </Typography>
           <Search>
             <SearchIconWrapper>
