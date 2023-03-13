@@ -6,10 +6,7 @@ Enter the root directory
 ```
 npm install
 ```
-then
-```
-npm preinstall
-```
+
 ### Run
 Start the server end in development mode
 ```
