@@ -110,7 +110,12 @@ router.post('/register', [
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
     // Insert the new user into the database
-    await pool.query('INSERT INTO users (email, password, name, role, profile) VALUES ($1, $2, $3, $4, $5)', [email, hashedPassword, name, role, profile]);
+    const newUser = await pool.query('INSERT INTO users (email, password, name, role, profile) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, name, role, profile', [email, hashedPassword, name, role, profile]);
+    if(role === 'admin'){
+      const { id } = newUser.rows[0];
+      const { password } = newUser.rows[2]
+      await pool.query('INSERT INTO admin_users (id, email, password, name, role, profile) VALUES ($1, $2, $3, $4, $5, $6)', [id, email, password, name, role, profile]);
+    }
     res.json({ message: 'User created successfully' });
   } catch (err) {
     console.log(err);
