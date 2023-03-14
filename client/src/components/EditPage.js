@@ -67,9 +67,7 @@ const EditPage = ({ token }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    const tagsArray = tags.split(','); // assuming tags is a comma-separated string
-
+    console.log(tags)
     try {
       const response = await fetch(`http://localhost:1234/api/user/codeSnippets/${id}`, {
         method: 'PUT',
@@ -81,7 +79,7 @@ const EditPage = ({ token }) => {
           title,
           description,
           code,
-          tags: tagsArray,
+          tags: tags,
         })
       })
       const data = await response.json();

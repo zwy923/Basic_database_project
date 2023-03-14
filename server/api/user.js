@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-
+const multer = require('multer');
 const passport = require('passport')
 const jwt = require("jsonwebtoken");
 const validateToken = require("../auth/validateToken.js")
@@ -17,6 +17,10 @@ const pool = new Pool({
   password: '0923',
   port: 5432,
 });
+
+// Create a multer storage object to specify where to save uploaded files
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 router.get('/private', validateToken, (req, res) => {
   res.json({ email: req.user.email });
@@ -413,6 +417,39 @@ router.get('/votes/count/:id', async (req, res) => {
   }
 });
 
+
+
+// PUT route to handle updating or creating user profile
+router.put('/user-profile', async (req, res) => {
+  try {
+    const { id, gender, address, major } = req.body;
+
+    // Check if user profile already exists
+    const existingProfile = await pool.query(
+      'SELECT * FROM user_profile WHERE user_id = $1',
+      [user_id]
+    );
+
+    if (existingProfile.rows.length > 0) {
+      // User profile exists, update the existing row
+      const result = await pool.query(
+        'UPDATE user_profile SET gender = $1, address = $2, major = $3 WHERE user_id = $4 RETURNING *',
+        [gender, address, major, user_id]
+      );
+      res.status(200).json(result.rows[0]);
+    } else {
+      // User profile does not exist, create a new row
+      const result = await pool.query(
+        'INSERT INTO user_profile (user_id, gender, address, major) VALUES ($1, $2, $3, $4) RETURNING *',
+        [user_id, gender, address, major]
+      );
+      res.status(200).json(result.rows[0]);
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
+  }
+});
 
 
 module.exports = router;

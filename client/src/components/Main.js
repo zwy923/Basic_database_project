@@ -54,7 +54,7 @@ const Main = ({ token ,isLoggedIn}) => {
             token={token}
             role={role}
             isLoggedIn={isLoggedIn}
-            editable={snippet.user === id || role === 'admin'}
+            editable={snippet.user_id === id || role === 'admin'}
           />
         </Grid>
       ))}
