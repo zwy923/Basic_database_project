@@ -98,7 +98,8 @@ export default function Header({ isLoggedIn, onLogout, token}) {
   const [open, setOpen] = React.useState(false);
   const [userName, setUserName] = React.useState('')
   const [userRole, setUserRole] = React.useState('')
-  
+  const [searchContent, setSearchContent] = React.useState('');
+
   useEffect(() => {
     if(token){
       const decodedToken = jwtDecode(token);
@@ -118,6 +119,24 @@ export default function Header({ isLoggedIn, onLogout, token}) {
   const onLogin = () =>{
     navigate('/login')
   }
+
+  const handleKeyPress = async (event) => {
+    if (event.key === 'Enter') {
+      // send search request to backend
+      console.log('Searching for:', searchContent);
+      try {
+        const response = await fetch(`http://localhost:1234/api/search?content=${searchContent}`);
+        const data = await response.json();
+        console.log('Search results:', data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  };
+
+  const handleInputChange = (event) => {
+    setSearchContent(event.target.value);
+  };
 
   const handleProfileMenuOpen = (event) => {
     setAnchor1(event.currentTarget);
@@ -277,6 +296,9 @@ export default function Header({ isLoggedIn, onLogout, token}) {
             <StyledInputBase
               placeholder="Search…"
               inputProps={{ 'aria-label': 'search' }}
+              value={searchContent}
+              onKeyPress={handleKeyPress}
+              onChange={handleInputChange}
             />
           </Search>
 
