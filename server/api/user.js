@@ -314,36 +314,32 @@ router.delete('/comments/:id', validateToken, async (req, res) => {
   const userId = req.user._id;
 
   try {
-    const client = await pool.connect();
 
     // Begin a transaction
-    await client.query('BEGIN');
+    await pool.query('BEGIN');
 
     // Check if the comment belongs to the authenticated user
-    const commentResult = await client.query('SELECT * FROM comments WHERE id=$1 AND user_id=$2', [commentId, userId]);
+    const commentResult = await pool.query('SELECT * FROM comments WHERE id=$1 AND user_id=$2', [commentId, userId]);
     if (commentResult.rows.length === 0) {
       res.status(404).json({ error: 'Comment not found or unauthorized to delete' });
       return;
     }
 
     // Delete the comment
-    await client.query('DELETE FROM comments WHERE id=$1', [commentId]);
+    await pool.query('DELETE FROM comments WHERE id=$1', [commentId]);
 
     // Commit the transaction
-    await client.query('COMMIT');
+    await pool.query('COMMIT');
 
     // Send a success message
     res.json({ message: 'Comment deleted successfully' });
   } catch (error) {
     // Rollback the transaction in case of error
-    await client.query('ROLLBACK');
+    await pool.query('ROLLBACK'); 
 
     // Log error to console and send 500 status code with a message
     console.error(error);
     res.status(500).json({ message: 'Internal server error.' });
-  } finally {
-    // Release the database connection
-    client.release();
   }
 });
 
