@@ -53,6 +53,8 @@ const CreateSnippet = ({token}) => {
   
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const tagsArray = tags.split(',');
+
     try {
       const response = await fetch('http://localhost:1234/api/user/codeSnippets',{
         method: 'POST',
@@ -63,7 +65,7 @@ const CreateSnippet = ({token}) => {
         body: JSON.stringify({
           title,
           code,
-          tags,
+          tags: tagsArray,
           description
         })
       })

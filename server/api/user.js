@@ -144,18 +144,22 @@ router.get('/codeSnippets/:id', validateToken, async (req, res) => {
   const codeSnippetId = req.params.id;
   // Get the authenticated user from the request
   const user = req.user;
-
   try {
     // Select the code snippet with the specified ID from the code_snippets table
     const result = await pool.query('SELECT * FROM code_snippets WHERE id = $1', [codeSnippetId]);
     const codeSnippet = result.rows[0];
 
     // If no code snippet was found or the authenticated user is not the creator of the code snippet, respond with a 404 error status and an error message
-    if (!codeSnippet || codeSnippet.user_id !== user._id) {
-      res.status(404).json({ error: 'Code snippet not found or unauthorized to edit' });
-    // If the code snippet was found, respond with the code snippet as a JSON object
-    } else {
+    if(user.role === 'admin'){
       res.json(codeSnippet);
+    }
+    else{
+      if (!codeSnippet || codeSnippet.user_id !== user._id) {
+        res.status(404).json({ error: 'Code snippet not found or unauthorized to edit' });
+      // If the code snippet was found, respond with the code snippet as a JSON object
+      } else {
+        res.json(codeSnippet);
+      }
     }
   } catch (err) {
     console.log(err);
@@ -172,9 +176,9 @@ router.put('/codeSnippets/:id', validateToken, (req, res) => {
 
   // Extract the updated title, code, tags, and description from the request body
   const { title, code, tags, description} = req.body;
-
+  console.log(req.body)
   // Update the code snippet with the specified ID and user ID
-  pool.query('UPDATE code_snippets SET title=$1, code=$2, description=$3, tags=$4, updated_at=$5 WHERE id=$6 AND user_id=$7 RETURNING *', [title, code, description, tags, new Date(), codeSnippetId, userId], (err, result) => {
+  pool.query('UPDATE code_snippets SET title=$1, code=$2, description=$3, tags=$4, updated_at=$5 WHERE id=$6 RETURNING *', [title, code, description, tags, new Date(), codeSnippetId], (err, result) => {
     if (err) {
       // Handle any errors that occur during the update
       console.error(err);
