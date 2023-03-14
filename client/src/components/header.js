@@ -25,7 +25,7 @@ import { alpha, createTheme, styled } from '@mui/material/styles';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jwtDecode from 'jwt-decode';
-
+import SearchDialog from './SerachDialog';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -99,6 +99,8 @@ export default function Header({ isLoggedIn, onLogout, token}) {
   const [userName, setUserName] = React.useState('')
   const [userRole, setUserRole] = React.useState('')
   const [searchContent, setSearchContent] = React.useState('');
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [results, setResults] = React.useState([]);
 
   useEffect(() => {
     if(token){
@@ -120,18 +122,33 @@ export default function Header({ isLoggedIn, onLogout, token}) {
     navigate('/login')
   }
 
+  const handleSearchOpen = () => {
+    setSearchOpen(true);
+  };
+
+  const handleSearchClose = () => {
+    setSearchOpen(false);
+  };
+
   const handleKeyPress = async (event) => {
     if (event.key === 'Enter') {
-      // send search request to backend
-      console.log('Searching for:', searchContent);
-      try {
-        const response = await fetch(`http://localhost:1234/api/search?content=${searchContent}`);
-        const data = await response.json();
-        console.log('Search results:', data);
-      } catch (error) {
-        console.error(error);
+      if(searchContent !== ''){
+        // send search request to backend
+        console.log('Searching for:', searchContent);
+        try {
+          const response = await fetch(`http://localhost:1234/api/search?content=${searchContent}`);
+          const data = await response.json();
+          console.log('Search results:', data);
+          setResults(data)
+          handleSearchOpen()
+        } catch (error) {
+          console.error(error);
+        }
       }
-    }
+      else{
+        alert("Please input something!")
+      }
+    }   
   };
 
   const handleInputChange = (event) => {
@@ -301,7 +318,7 @@ export default function Header({ isLoggedIn, onLogout, token}) {
               onChange={handleInputChange}
             />
           </Search>
-
+          <SearchDialog open={searchOpen} onClose={handleSearchClose} query={searchContent} results={results}/>
           <Dialog
               open={open}
               TransitionComponent={Transition}
