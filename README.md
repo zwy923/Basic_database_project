@@ -6,19 +6,15 @@ Enter the root directory
 ```
 npm install
 ```
-then
-```
-npm preinstall
-```
+
 ### Run
-Start the server end in development mode
+Start the server
 ```
-SET NODE_ENV=development& npm run dev:server
+npm run dev:server
 ```
-then start the front end
-```
-npm run dev:client
-```
+and enter browser
+[click here](http://localhost:1234/)
+
 ## user manual
 #### Sign in
 ![login](./public/img/howtolog.png)
