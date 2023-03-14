@@ -15,7 +15,7 @@ import CreateComment from './CreateComment';
 import CommentCard from './Card4Comment';
 
 const DetailSnippet = ({ open, handleClose, snippet, name, token, editable, role, isLoggedIn}) => {
-  const { title, code, tags, createdAt, updatedAt, id} = snippet;
+  const { title, code, tags, created_at, updated_at, id} = snippet;
 
   const [commentCreated, setCommentCreated] = useState(false);
   const [comments, setComments] = useState([]);
@@ -39,7 +39,7 @@ const DetailSnippet = ({ open, handleClose, snippet, name, token, editable, role
       <DialogContent dividers>
         <Typography variant="subtitle1" gutterBottom>
           {name}<br />
-          Updated At: {new Date(updatedAt).toLocaleString()}<br />
+          Updated At: {new Date(updated_at).toLocaleString()}<br />
           ----
         </Typography>
 
@@ -70,7 +70,7 @@ const DetailSnippet = ({ open, handleClose, snippet, name, token, editable, role
         </Typography>
         <Typography variant="subtitle1" gutterBottom>
           ----<br/>
-          Created At: {new Date(createdAt).toLocaleString()}
+          Created At: {new Date(created_at).toLocaleString()}
         </Typography>
         <Typography variant="subtitle1" gutterBottom>Tags:
           <Button size='small' variant="text">{tags}</Button>

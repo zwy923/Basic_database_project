@@ -18,6 +18,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import { Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import DetailSnippet from './Detail4Snippet';
+import moment from 'moment';
+
 
 // Defining the styled component 'ExpandMore'
 const ExpandMore = styled((props) => {
@@ -36,8 +38,9 @@ const CodeSnippet = ({snippet, token, editable, role, isLoggedIn}) => {
   
   const navigate = useNavigate();
   // Destructuring required properties from 'snippet'
-  const { title, tags, createdAt, updatedAt, description, user_id, id} = snippet;
-
+  const { title, tags, created_at, updated_at, description, user_id, id} = snippet;
+  
+  console.log(snippet)
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const [userName, setUserName] = useState('');
@@ -265,8 +268,8 @@ const CodeSnippet = ({snippet, token, editable, role, isLoggedIn}) => {
       </CardActions>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <CardContent>
-          Created At: {createdAt}<br></br>
-          Updated At: {updatedAt}<br></br>
+          Created At: {new Date(created_at).toLocaleString()}<br></br>
+          Updated At: {new Date(updated_at).toLocaleString()}<br></br>
           {tags}
         </CardContent>
       </Collapse>
