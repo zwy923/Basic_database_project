@@ -1,10 +1,7 @@
 var express = require('express');
 var router = express.Router();
-const mongoose = require("mongoose")
-const User = require('../models/User')
-const Comment = require('../models/Comment');
-const CodeSnippet = require('../models/CodeSnippet');
-const Vote = require('../models/Vote')
+const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
 
 const passport = require('passport')
 const jwt = require("jsonwebtoken");
@@ -12,6 +9,14 @@ const validateToken = require("../auth/validateToken.js")
 const { check, validationResult } = require('express-validator')
 process.env.SECRET = 'mysecretkey';
 
+
+const pool = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'testdb',
+  password: '0923',
+  port: 5432,
+});
 
 router.get('/private', validateToken, (req, res) => {
   res.json({ email: req.user.email });
@@ -22,49 +27,56 @@ router.get('/', function(req, res, next) {
 });
 
 // Handle user login
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  // Find user with the specified email
-  User.findOne({ email }, (err, user) => {
-    if (err) return res.status(500).json({ error: 'something went wrong' });
-    // If user not found, return error
-    if (!user) return res.status(404).json({ error: 'user not found' });
+
+  try {
+    // Find user with the specified email
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'user not found' });
+    }
+    const user = result.rows[0];
     // Compare the provided password with the user's stored password
-    user.comparePassword(password, (err, isMatch) => {
-      if (err) return res.status(500).json({ error: 'something went wrong' });
-      // If passwords don't match, return error
-      if (!isMatch) return res.status(401).json({ error: 'email or password is incorrect' });
-      // If passwords match, create a JSON Web Token (JWT) for the user
-      const payload = { _id:user._id, email: user.email, name:user.name, role:user.role};
-      const token = jwt.sign(payload, process.env.SECRET,{
-        expiresIn: 7200 // Token expires in 7200 seconds (2 hours)
-      });
-      // Return success message and token
-      res.json({ "success":"true", "token":token});
-    });
-  });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'email or password is incorrect' });
+    }
+    // If passwords match, create a JSON Web Token (JWT) for the user
+    const payload = { _id: user.id, email: user.email, name: user.name, role: user.role };
+    const token = jwt.sign(payload, process.env.SECRET, { expiresIn: 7200 }); // Token expires in 7200 seconds (2 hours)
+    // Return success message and token
+    res.json({ "success": "true", "token": token });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: 'something went wrong' });
+  }
 });
 
 
 // Handle getting a user's name by their user ID
-router.post('/getusername',(req, res)=>{
-  const id  = req.body.userid
-  // Find user with the specified ID
-  User.findOne({_id:id},(err,user)=>{
-    if (err) return res.status(500).json({ error: 'something went wrong' });
-    // If user not found, return error
-    if (!user) return res.status(404).json({ error: 'user not found' });
+router.post('/getusername', async (req, res) => {
+  const id = req.body.userid;
+  try {
+    // Find user with the specified ID
+    const result = await pool.query('SELECT name FROM users WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'user not found' });
+    }
     // Return user's name
-    res.json({name:user.name})
-  })
-})
+    res.json({ name: result.rows[0].name });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: 'something went wrong' });
+  }
+});
+
 
 // Handle logout
 router.post('/logout', (req, res) => {
   res.clearCookie('jwt'); // Clear the JWT token stored in the cookie
   res.json({ success: true });
 });
-
 
 
 // Handle user registration
@@ -76,80 +88,79 @@ router.post('/register', [
     .withMessage('Password must be at least 8 characters long')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\~\`\!\@\#\$\%\^\&\*\(\)\-\_\+\=\{\}\[\]\|\\\;\:\"\<\>\,\.\/\?]).*$/)
     .withMessage("Password must include at least one lowercase letter, one uppercase letter, and one number")
-],(req, res) => {
+], async (req, res) => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
   // Get email, password, name, and role code from request body
-  const { email, password, name, rolecode} = req.body;
+  const { email, password, name, rolecode } = req.body;
   // Set profile message for new user
-  const profile = "This user is very lazy and hasn't left a profile :)"
+  const profile = "This user is very lazy and hasn't left a profile :)";
   // Set user role based on role code
-  if(rolecode === 'zhangwenyue923'){
-    role = 'admin'
-  }else{
-    role = 'normal'
-  }
-  const user = new User({ email, password, name ,role, profile});
-  user.save((err) => {
-    if (err) {
-        if(err.code === 11000) return res.status(403).json({error: 'email already exists'});
-        return res.status(500).json({error: 'something went wrong'});
+  const role = rolecode === 'zhangwenyue923' ? 'admin' : 'normal';
+
+  try {
+    // Check if email already exists
+    const result = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (result.rows.length > 0) {
+      return res.status(403).json({ error: 'email already exists' });
     }
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // Insert the new user into the database
+    await pool.query('INSERT INTO users (email, password, name, role, profile) VALUES ($1, $2, $3, $4, $5)', [email, hashedPassword, name, role, profile]);
     res.json({ message: 'User created successfully' });
-  });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: 'something went wrong' });
+  }
 });
 
 
 // Create a new code snippet
-router.post('/codeSnippets', validateToken, (req, res) => {
+router.post('/codeSnippets', validateToken, async (req, res) => {
   // Extract the required fields from the request body
-  const { title, code, tags, description} = req.body;
+  const { title, code, tags, description } = req.body;
   // Get the authenticated user from the request
   const user = req.user;
 
-  // Create a new code snippet instance
-  const codeSnippet = new CodeSnippet({
-    title,
-    code,
-    tags,
-    description,
-    user: user._id
-  });
-
-  // Save the new code snippet instance to the database
-  codeSnippet.save((err, codeSnippet) => {
-    if (err) {
-      // If there's an error, log it and return an error response
-      console.log(err)
-      res.status(500).json({ error: 'Something went wrong' });
-    } else {
-      // If the code snippet was successfully saved, return it as a response
-      res.json(codeSnippet);
-    }
-  });
+  try {
+    // Insert a new row into the code_snippets table
+    const result = await pool.query('INSERT INTO code_snippets (title, code, tags, description, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING *', [title, code, tags, description, user._id]);
+    // Return the new code snippet as a response
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
 });
 
 
 // Get an existing code snippet
-router.get('/codeSnippets/:id', validateToken, (req, res) => {
+router.get('/codeSnippets/:id', validateToken, async (req, res) => {
   // Extract the id of the code snippet from the request parameters
   const codeSnippetId = req.params.id;
-  // Look up the code snippet with the given id
-  CodeSnippet.findOne({ _id: codeSnippetId}, (err, codeSnippet) => {
-    // If there was an error, respond with a 500 error status and an error message
-    if (err) {
-      res.status(500).json({ error: 'Something went wrong' });
-    // If no code snippet was found, respond with a 404 error status and an error message
-    } else if (!codeSnippet) {
+  // Get the authenticated user from the request
+  const user = req.user;
+
+  try {
+    // Select the code snippet with the specified ID from the code_snippets table
+    const result = await pool.query('SELECT * FROM code_snippets WHERE id = $1', [codeSnippetId]);
+    const codeSnippet = result.rows[0];
+
+    // If no code snippet was found or the authenticated user is not the creator of the code snippet, respond with a 404 error status and an error message
+    if (!codeSnippet || codeSnippet.user_id !== user._id) {
       res.status(404).json({ error: 'Code snippet not found or unauthorized to edit' });
     // If the code snippet was found, respond with the code snippet as a JSON object
     } else {
       res.json(codeSnippet);
     }
-  });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
 });
 
 
@@ -163,16 +174,17 @@ router.put('/codeSnippets/:id', validateToken, (req, res) => {
   const { title, code, tags, description} = req.body;
 
   // Update the code snippet with the specified ID and user ID
-  CodeSnippet.findOneAndUpdate({ _id: codeSnippetId, user: userId }, { title, code, description, tags, updatedAt: Date.now() }, { new: true }, (err, codeSnippet) => {
+  pool.query('UPDATE code_snippets SET title=$1, code=$2, description=$3, tags=$4, updated_at=$5 WHERE id=$6 AND user_id=$7 RETURNING *', [title, code, description, tags, new Date(), codeSnippetId, userId], (err, result) => {
     if (err) {
       // Handle any errors that occur during the update
+      console.error(err);
       res.status(500).json({ error: 'Something went wrong' });
-    } else if (!codeSnippet) {
+    } else if (result.rowCount === 0) {
       // Handle the case where the code snippet is not found or the user is not authorized to edit it
       res.status(404).json({ error: 'Code snippet not found or unauthorized to edit' });
     } else {
       // Return the updated code snippet
-      res.json(codeSnippet);
+      res.json(result.rows[0]);
     }
   });
 });
@@ -184,18 +196,16 @@ router.delete('/codeSnippets/:id', validateToken, (req, res) => {
   const codeSnippetId = req.params.id;
   const userId = req.user._id;
 
-  // Find the code snippet with the given ID that belongs to the user and delete it
-  CodeSnippet.findOneAndDelete({ _id: codeSnippetId, user: userId }, (err, codeSnippet) => {
-    // If there is an error, return a 500 status code and an error message
+  // Use the pool to execute a DELETE query
+  pool.query('DELETE FROM code_snippets WHERE id = $1 AND user_id = $2', [codeSnippetId, userId], (err, result) => {
     if (err) {
+      // If there is an error, return a 500 status code and an error message
       res.status(500).json({ error: 'Something went wrong' });
-    }
-    // If the code snippet doesn't exist or doesn't belong to the user, return a 404 status code and an error message
-    else if (!codeSnippet) {
+    } else if (result.rowCount === 0) {
+      // If the code snippet doesn't exist or doesn't belong to the user, return a 404 status code and an error message
       res.status(404).json({ error: 'Code snippet not found or unauthorized to delete' });
-    }
-    // If the code snippet is successfully deleted, return a success message
-    else {
+    } else {
+      // If the code snippet is successfully deleted, return a success message
       res.json({ message: 'Code snippet deleted successfully' });
     }
   });
@@ -205,11 +215,15 @@ router.delete('/codeSnippets/:id', validateToken, (req, res) => {
 // Get all code snippets
 router.get('/codesnippets', async (req, res) => {
   try {
-    // Retrieve all code snippets from the database
-    const snippets = await CodeSnippet.find();
+    // Retrieve all code snippets from the database, including the user's name
+    const snippets = await pool.query(`
+      SELECT code_snippets.*, users.name AS user_name
+      FROM code_snippets
+      JOIN users ON code_snippets.user_id = users.id
+    `);
 
     // Return the snippets as a JSON response
-    res.json(snippets);
+    res.json(snippets.rows);
   } catch (error) {
     // Handle errors
     console.error(error);
@@ -222,10 +236,17 @@ router.get('/comments/:snippetId', async (req, res) => {
   const snippetId = req.params.snippetId;
 
   try {
-    // Query the Comment model for all comments related to the snippet id and populate the user field with name only
-    const comments = await Comment.find({ codeSnippet: snippetId })
-      .populate('user', 'name')
-      .sort({ createdAt: -1 }); // Sort comments by creation date in descending order
+    // Execute the SQL query to retrieve comments related to the specified code snippet
+    const result = await pool.query(`
+      SELECT comments.*, users.name 
+      FROM comments 
+      JOIN users ON comments.user_id = users.id 
+      WHERE comments.code_snippet_id = $1
+      ORDER BY comments.created_at DESC
+    `, [snippetId]);
+
+    // Extract the rows from the result object and send them as a JSON response
+    const comments = result.rows;
     res.json({ comments });
   } catch (err) {
     // Log error to console and send 500 status code with a message
@@ -234,95 +255,117 @@ router.get('/comments/:snippetId', async (req, res) => {
   }
 });
 
-
 // Handle POST request for adding a comment
-router.post('/comments', validateToken, (req, res) => {
-
+router.post('/comments', validateToken, async (req, res) => {
   // Extract the comment text and associated code snippet ID from the request body
   const text = req.body.text;
   const codeSnippetId = req.body.codeSnippetId;
   // Create a new Comment object with the extracted data, including the ID of the authenticated user
-  const comment = new Comment({
-    text: text,
-    user: req.user._id,
-    codeSnippet: codeSnippetId,
-  });
+  const userId = req.user._id;
+  const queryText = 'INSERT INTO comments (text, user_id, code_snippet_id) VALUES ($1, $2, $3) RETURNING *';
+  const queryValues = [text, userId, codeSnippetId];
 
-  // Save the new comment to the database
-  comment.save((err, comment) => {
-    if (err) {
-      // If there was an error saving the comment, return a 500 error with an error message
-      res.status(500).json({ error: 'Something went wrong' });
-    } else {
-      // If the comment was saved successfully, return the comment object in the response
-      res.json(comment);
-    }
-  });
+  try {
+    // Save the new comment to the database
+    const result = await pool.query(queryText, queryValues);
+    // Return the newly created comment object in the response
+    res.json(result.rows[0]);
+  } catch (error) {
+    // If there was an error saving the comment, return a 500 error with an error message
+    console.error(error);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
 });
 
 
 
 // Edit an existing comment
-router.put('/comments/:id', validateToken, (req, res) => {
+router.put('/comments/:id', validateToken, async (req, res) => {
   // Extract the comment ID and text from the request
   const commentId = req.params.id;
   const text = req.body.text;
 
-  // Use Mongoose's findOneAndUpdate method to update the comment with the given ID
-  Comment.findOneAndUpdate(
-    { _id: commentId},  // Find the comment with the given ID
-    { text },  // Update the comment's text field
-    { new: true },  // Return the updated comment in the response
-    (err, comment) => {  // Callback function to handle the result of the update
-      if (err) {
-        // If there was an error, return a 500 status code and an error message
-        res.status(500).json({ error: 'Something went wrong' });
-      } else if (!comment) {
-        // If no comment was found, return a 404 status code and an error message
-        res.status(404).json({ error: 'Comment not found or unauthorized to edit' });
-      } else {
-        // If the comment was successfully updated, return it in the response
-        res.json(comment);
-      }
+  try {
+    // Update the comment with the given ID
+    const result = await pool.query(
+      'UPDATE comments SET text = $1 WHERE id = $2 RETURNING *',
+      [text, commentId]
+    );
+
+    // If no comment was found, return a 404 status code and an error message
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: 'Comment not found or unauthorized to edit' });
+    } else {
+      // If the comment was successfully updated, return it in the response
+      const comment = result.rows[0];
+      res.json(comment);
     }
-  );
+  } catch (err) {
+    // If there was an error, return a 500 status code and an error message
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
 });
 
 
 // Delete an existing comment
-router.delete('/comments/:id', validateToken, (req, res) => {
-  const commentId = req.params.id; // Get the comment ID from the request parameters
-  const userId = req.user._id; // Get the user ID from the authenticated user's information in the request
+router.delete('/comments/:id', validateToken, async (req, res) => {
+  const commentId = req.params.id;
+  const userId = req.user._id;
 
-  Comment.findOneAndDelete({ _id: commentId, user: userId }, (err, comment) => { // Find the comment to delete by ID and the authenticated user ID
-    if (err) { // If there is an error, return a 500 error with a message
-      res.status(500).json({ error: 'Something went wrong' });
-    } else if (!comment) { // If the comment doesn't exist or the authenticated user is unauthorized to delete, return a 404 error with a message
+  try {
+    const client = await pool.connect();
+
+    // Begin a transaction
+    await client.query('BEGIN');
+
+    // Check if the comment belongs to the authenticated user
+    const commentResult = await client.query('SELECT * FROM comments WHERE id=$1 AND user_id=$2', [commentId, userId]);
+    if (commentResult.rows.length === 0) {
       res.status(404).json({ error: 'Comment not found or unauthorized to delete' });
-    } else { // If the comment is successfully deleted, return a success message
-      res.json({ message: 'Comment deleted successfully' });
+      return;
     }
-  });
+
+    // Delete the comment
+    await client.query('DELETE FROM comments WHERE id=$1', [commentId]);
+
+    // Commit the transaction
+    await client.query('COMMIT');
+
+    // Send a success message
+    res.json({ message: 'Comment deleted successfully' });
+  } catch (error) {
+    // Rollback the transaction in case of error
+    await client.query('ROLLBACK');
+
+    // Log error to console and send 500 status code with a message
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error.' });
+  } finally {
+    // Release the database connection
+    client.release();
+  }
 });
 
 
 // Upvote or cancel vote a post or comment
 router.post('/votes', validateToken, async (req, res) => {
-  const objectId = req.body.id; // Get the ID of the post or comment being voted on from the request body
-  const userId = req.user._id; // Get the ID of the user who is making the vote from the request's authenticated user object
+  const objectId = req.body.id;
+  const userId = req.user._id;
+
   try {
-    const existingVote = await Vote.findOne({ user: userId, objectId: objectId }); // Check if the user has already voted on the post or comment by searching for a matching vote object in the database
+    const existingVoteResult = await pool.query('SELECT * FROM votes WHERE user_id = $1 AND object_id = $2', [userId, objectId]);
+    const existingVote = existingVoteResult.rows[0];
     if (existingVote) {
-      await Vote.deleteOne(existingVote) // If the user has already voted, delete their existing vote from the database to "unvote" the post or comment
-      res.status(200).json({ isvoted: false }); // Respond to the request with a status of 200 and a JSON object indicating that the post or comment is no longer voted by the user
+      await pool.query('DELETE FROM votes WHERE id = $1', [existingVote.id]);
+      res.status(200).json({ isvoted: false });
     } else {
-      const newVote = new Vote({ user: userId, objectId: objectId, isvoted: true }); // If the user has not yet voted, create a new vote object in the database with the user ID, object ID, and "isvoted" flag set to true
-      await newVote.save(); // Save the new vote object to the database
-      res.status(201).json({ isvoted: true }); // Respond to the request with a status of 201 and a JSON object indicating that the post or comment is now voted by the user
+      await pool.query('INSERT INTO votes (user_id, object_id, is_voted) VALUES ($1, $2, $3)', [userId, objectId, true]);
+      res.status(201).json({ isvoted: true });
     }
   } catch (err) {
-    console.log(err); // If there's an error, log it to the console
-    res.status(500).json({ message: 'Internal server error.' }); // Respond to the request with a status of 500 and a JSON object indicating that there was an internal server error
+    console.log(err);
+    res.status(500).json({ message: 'Internal server error.' });
   }
 });
 
@@ -332,11 +375,12 @@ router.get('/votes/:id', validateToken, async (req, res) => {
   const objectId = req.params.id;
   // Extract the ID of the user from the 'req' object, which contains information about the request being made
   const userId = req.user._id;
+
   try {
-    // Check if the user has already voted on the post or comment using a query to the 'Vote' collection
-    const vote = await Vote.findOne({ user: userId, objectId: objectId });
+    // Check if the user has already voted on the post or comment using a query to the 'votes' table
+    const result = await pool.query('SELECT * FROM votes WHERE user_id = $1 AND object_id = $2', [userId, objectId]);
     // If the user has voted, return a JSON response with 'isvoted' set to true
-    if (vote) {
+    if (result.rowCount > 0) {
       res.status(200).json({ isvoted: true });
     // If the user has not voted, return a JSON response with 'isvoted' set to false
     } else {
@@ -352,10 +396,16 @@ router.get('/votes/:id', validateToken, async (req, res) => {
 
 // Get count of votes in specific post
 router.get('/votes/count/:id', async (req, res) => {
-  console.log(req.params.id)
   const Id = req.params.id;
-  const voteCount = await Vote.countDocuments({ objectId: Id, isvoted: true });
-  res.status(200).json({ count: voteCount });
+  console.log(Id)
+  try {
+    const { rows } = await pool.query(`SELECT COUNT(*) FROM votes WHERE object_id = $1 AND is_voted = true`, [Id]);
+    const voteCount = rows[0].count;
+    res.status(200).json({ count: voteCount });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
 });
 
 

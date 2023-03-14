@@ -15,7 +15,7 @@ import CreateComment from './CreateComment';
 import CommentCard from './Card4Comment';
 
 const DetailSnippet = ({ open, handleClose, snippet, name, token, editable, role, isLoggedIn}) => {
-  const { title, code, tags, createdAt, updatedAt, _id} = snippet;
+  const { title, code, tags, createdAt, updatedAt, id} = snippet;
 
   const [commentCreated, setCommentCreated] = useState(false);
   const [comments, setComments] = useState([]);
@@ -26,12 +26,12 @@ const DetailSnippet = ({ open, handleClose, snippet, name, token, editable, role
   useEffect(() => {
     // Define an async function to fetch the comments from the API
     const fetchComments = async () => {
-      const response = await fetch(`http://localhost:1234/api/user/comments/${_id}`);
+      const response = await fetch(`http://localhost:1234/api/user/comments/${id}`);
       const data = await response.json();
       setComments(data.comments);
     };
     fetchComments();
-  }, [commentCreated, _id]);
+  }, [commentCreated, id]);
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -78,13 +78,13 @@ const DetailSnippet = ({ open, handleClose, snippet, name, token, editable, role
         <p>Comment:</p>
           <div>
             {comments.map((comment) => (
-            <CommentCard key={comment._id} comment={comment} token={token} role={role} />
+            <CommentCard key={comment.id} comment={comment} token={token} role={role} />
             ))}
           </div>
         {isLoggedIn ? (
         <CreateComment
           token={token}
-          codeSnippetId={snippet._id}
+          codeSnippetId={snippet.id}
           onCommentCreated={handleCommentCreated}
         />):(<p>Please login to comment.</p>)}
 

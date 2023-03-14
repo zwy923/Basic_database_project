@@ -24,7 +24,7 @@ const Main = ({ token ,isLoggedIn}) => {
     const fetchCodeSnippets = async () => {
       try {
         const response = await fetch(
-          `http://localhost:1234/api/user/codesnippets?page=${page}`
+          `http://localhost:1234/api/user/codesnippets`
         );
         const data = await response.json();
         setCodeSnippets(data);
@@ -48,7 +48,7 @@ const Main = ({ token ,isLoggedIn}) => {
     <>
     <Grid justifyContent="center" direction="row"  display="flex" container spacing={2}>
       {codeSnippets.slice(startIdx, endIdx).map((snippet) => (
-        <Grid key={snippet._id} item xs={12} md={4}>
+        <Grid key={snippet.id} item xs={12} md={4}>
           <CodeSnippet
             snippet={snippet}
             token={token}

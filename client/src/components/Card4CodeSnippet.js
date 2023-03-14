@@ -36,7 +36,7 @@ const CodeSnippet = ({snippet, token, editable, role, isLoggedIn}) => {
   
   const navigate = useNavigate();
   // Destructuring required properties from 'snippet'
-  const { title, tags, createdAt, updatedAt, description, user, _id} = snippet;
+  const { title, tags, createdAt, updatedAt, description, user_id, id} = snippet;
 
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
@@ -62,7 +62,7 @@ const CodeSnippet = ({snippet, token, editable, role, isLoggedIn}) => {
 
   const handleEdit = () => {
     setAnchorEl(null);
-    navigate(`/edit/${_id}`);
+    navigate(`/edit/${id}`);
   };
   
   const go4More = () => {
@@ -70,9 +70,9 @@ const CodeSnippet = ({snippet, token, editable, role, isLoggedIn}) => {
   }
 
 
-  const initVote = async (_id) => {
+  const initVote = async (id) => {
     try{
-      const response = await fetch(`http://localhost:1234/api/user/votes/${_id}`, {
+      const response = await fetch(`http://localhost:1234/api/user/votes/${id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -93,9 +93,9 @@ const CodeSnippet = ({snippet, token, editable, role, isLoggedIn}) => {
     }
   }
 
-  const initVoteCount = async(_id) =>{
+  const initVoteCount = async(id) =>{
     try{
-      const response = await fetch(`http://localhost:1234/api/user/votes/count/${_id}`, {
+      const response = await fetch(`http://localhost:1234/api/user/votes/count/${id}`, {
         method: 'GET',
         headers: {'Content-Type': 'application/json',},
       });
@@ -121,7 +121,7 @@ const CodeSnippet = ({snippet, token, editable, role, isLoggedIn}) => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          id: snippet._id,
+          id: snippet.id,
         }),
       });
   
@@ -143,7 +143,7 @@ const CodeSnippet = ({snippet, token, editable, role, isLoggedIn}) => {
   const handleDelete = async () => {
     setAnchorEl(null);
     try {
-    const response = await fetch(`http://localhost:1234/api/user/codeSnippets/${_id}`, {
+    const response = await fetch(`http://localhost:1234/api/user/codeSnippets/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -168,9 +168,9 @@ const CodeSnippet = ({snippet, token, editable, role, isLoggedIn}) => {
 
 
   useEffect(() => {
-    initVoteCount(_id)
+    initVoteCount(id)
     if(token){
-      initVote(_id)
+      initVote(id)
     }
     const fetchUserName = async () => {
       const response = await fetch(`http://localhost:1234/api/user/getusername`,{
@@ -179,16 +179,16 @@ const CodeSnippet = ({snippet, token, editable, role, isLoggedIn}) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          "userid":user
+          "userid":user_id
         })});
       const data = await response.json();
       setUserName(data.name);
     };
-    if (user) {
+    if (user_id) {
       fetchUserName();
     }
-  }, [user]);
-  
+  }, [user_id]);
+
   const [expanded, setExpanded] = React.useState(false);
 
   const handleExpandClick = () => {

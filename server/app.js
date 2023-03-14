@@ -11,32 +11,7 @@ var indexRouter = require('./routes/index');
 var apiRouter = require('./api/index')
 var userRouter = require('./api/user')
 
-/*const mongoose = require("mongoose")
-const mongoDB = "mongodb+srv://zwy923:zhangwenyue@atlascluster.oepjzvv.mongodb.net/test"
-mongoose.connect(mongoDB)
-mongoose.Promise = Promise
-const db = mongoose.connection
-db.on("error",console.error.bind(console,"MongoDB connection error."))*/
-
 const { Pool } = require('pg');
-
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'testdb',
-  password: '0923',
-  port: 5432,
-});
-
-pool.query('SELECT * FROM account', (error, result) => {
-  if (error) {
-    console.error(error);
-  } else {
-    console.log(result.rows);
-  }
-});
-
-
 
 var app = express();
 
@@ -48,18 +23,18 @@ const opts = {
 };
 
 passport.use(
-    new JwtStrategy(opts, (jwt_payload, done) => {
-      User.findById(jwt_payload.sub, (err, user) => {
-        if (err) {
-          return done(err, false);
-        }
-        if (user) {
-          return done(null, user);
-        } else {
-          return done(null, false);
-        }
-      });
-    })
+  new JwtStrategy(opts, (jwt_payload, done) => {
+    pool.query('SELECT * FROM users WHERE id = $1', [jwt_payload.sub], (err, result) => {
+      if (err) {
+        return done(err, false);
+      }
+      if (result.rows.length > 0) {
+        return done(null, result.rows[0]);
+      } else {
+        return done(null, false);
+      }
+    });
+  })
 );
 
 app.use(cors())

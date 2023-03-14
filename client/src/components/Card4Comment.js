@@ -20,13 +20,16 @@ import EditIcon from '@mui/icons-material/Edit'
 import jwtDecode from 'jwt-decode';
 
 const CommentCard = ({ comment, token, role}) => {
-  const { text, user, createdAt, _id} = comment;
+  const { text, user_id, created_at, id} = comment;
   const [deleted, setDeleted] = useState(false);
   const [edited,setEdited] = useState(false)
   const [editOpen, setEditOpen] = useState(false);
   const [editText, setEditText] = useState(text);
   const [userId,setUserID] = useState("")
+  const [userName,setUserName] = useState('')
   useEffect(() => {
+
+
     if(token){
       const decodedToken = jwtDecode(token);
       if (decodedToken.exp < Date.now() / 1000) {
@@ -34,7 +37,23 @@ const CommentCard = ({ comment, token, role}) => {
       } else {
         setUserID(decodedToken._id)
       }
-    }},[])
+    }
+    const fetchUserName = async () => {
+      const response = await fetch(`http://localhost:1234/api/user/getusername`,{
+        method:'post',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "userid":user_id
+        })});
+      const data = await response.json();
+      setUserName(data.name);
+    };
+
+    fetchUserName();
+
+  },[])
 
   const handleEditClick = () => {
     setEditOpen(true);
@@ -51,7 +70,7 @@ const CommentCard = ({ comment, token, role}) => {
   // This function handles the submission of an edited comment
   const handleEditSubmit = async () => {
     try {
-      const response = await fetch(`http://localhost:1234/api/user/comments/${_id}`, {
+      const response = await fetch(`http://localhost:1234/api/user/comments/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -73,7 +92,7 @@ const CommentCard = ({ comment, token, role}) => {
   // Define an asynchronous function to handle comment deletion
   const handleDelete = async () => {
     try {
-      const response = await fetch(`http://localhost:1234/api/user/comments/${_id}`, {
+      const response = await fetch(`http://localhost:1234/api/user/comments/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -114,13 +133,13 @@ const CommentCard = ({ comment, token, role}) => {
             <div>
               <Typography level="body2">by</Typography>
               <Typography fontWeight="lg" level="body2">
-                {user.name}
+                {userName}
               </Typography>
             </div>
         </Box>
         <br />
         <Box margin={2}>{text}</Box>
-        <p style={{ textAlign: 'right', marginRight: '20px' }}>Commented at {new Date(createdAt).toLocaleString()}</p>
+        <p style={{ textAlign: 'right', marginRight: '20px' }}>Commented at {new Date(created_at).toLocaleString()}</p>
 
         <CardOverflow sx={{ p: 'var(--Card-padding)', display: 'flex' }}>
         <Input
@@ -132,12 +151,12 @@ const CommentCard = ({ comment, token, role}) => {
         <Link disabled underline="none" role="button" margin={2}>
           Post
         </Link>
-        {(user._id === userId || role === "admin") && (
+        {(user_id === userId || role === "admin") && (
           <IconButton onClick={handleEditClick} size="small">
             <EditIcon fontSize="inherit" />
           </IconButton>
         )}
-        {(user._id === userId || role === "admin") && (
+        {(user_id === userId || role === "admin") && (
           <IconButton onClick={handleDelete}>
             <DeleteIcon sx={{ color: red[500] }} />
           </IconButton>
