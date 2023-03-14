@@ -12,7 +12,7 @@ Start the server
 ```
 npm run dev:server
 ```
-and enter browser
+and enter browser then  
 [click here](http://localhost:1234/)
 
 ## user manual
