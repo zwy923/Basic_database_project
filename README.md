@@ -26,7 +26,7 @@ You can adjust the PostgreSQL connection parameters in the beginning of the /ser
 You can click "2. Click here to start server.bat"file to run app.  
 If it doesn't work or there is a problem, please try👇  
 
-Start the server
+Open a terminal in root directory
 ```
 npm run dev:server
 ```
