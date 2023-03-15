@@ -208,20 +208,39 @@ router.delete('/codeSnippets/:id', validateToken, (req, res) => {
   // Get the code snippet ID and user ID from the request parameters and user object
   const codeSnippetId = req.params.id;
   const userId = req.user._id;
+  console.log(req.user)
+  if(req.user.role === "admin"){
+    pool.query('DELETE FROM code_snippets WHERE id = $1', [codeSnippetId], (err, result) => {
+      if (err) {
+        // If there is an error, return a 500 status code and an error message
+        res.status(500).json({ error: 'Something went wrong' });
+      } else if (result.rowCount === 0) {
+        // If the code snippet doesn't exist or doesn't belong to the user, return a 404 status code and an error message
+        res.status(404).json({ error: 'Code snippet not found or unauthorized to delete' });
+      } else {
+        // If the code snippet is successfully deleted, return a success message
+        res.json({ message: 'Code snippet deleted successfully' });
+      }
+    });
 
-  // Use the pool to execute a DELETE query
-  pool.query('DELETE FROM code_snippets WHERE id = $1 AND user_id = $2', [codeSnippetId, userId], (err, result) => {
-    if (err) {
-      // If there is an error, return a 500 status code and an error message
-      res.status(500).json({ error: 'Something went wrong' });
-    } else if (result.rowCount === 0) {
-      // If the code snippet doesn't exist or doesn't belong to the user, return a 404 status code and an error message
-      res.status(404).json({ error: 'Code snippet not found or unauthorized to delete' });
-    } else {
-      // If the code snippet is successfully deleted, return a success message
-      res.json({ message: 'Code snippet deleted successfully' });
-    }
-  });
+  }
+  else{
+    // Use the pool to execute a DELETE query (isn't admin)
+    pool.query('DELETE FROM code_snippets WHERE id = $1 AND user_id = $2', [codeSnippetId, userId], (err, result) => {
+      if (err) {
+        // If there is an error, return a 500 status code and an error message
+        res.status(500).json({ error: 'Something went wrong' });
+      } else if (result.rowCount === 0) {
+        // If the code snippet doesn't exist or doesn't belong to the user, return a 404 status code and an error message
+        res.status(404).json({ error: 'Code snippet not found or unauthorized to delete' });
+      } else {
+        // If the code snippet is successfully deleted, return a success message
+        res.json({ message: 'Code snippet deleted successfully' });
+      }
+    });
+  }
+
+
 });
 
 
