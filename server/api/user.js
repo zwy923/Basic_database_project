@@ -344,7 +344,7 @@ router.put('/comments/:id', validateToken, async (req, res) => {
 router.delete('/comments/:id', validateToken, async (req, res) => {
   const commentId = req.params.id;
   const userId = req.user._id;
-  if(req.user.role === admin){
+  if(req.user.role === "admin"){
     try {
       // Begin a transaction
       await pool.query('BEGIN');
