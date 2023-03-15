@@ -417,12 +417,45 @@ router.get('/votes/count/:id', async (req, res) => {
   }
 });
 
+// GET route to fetch user profile by user ID
+router.get('/user-profile/:user_id', async (req, res) => {
+  try {
+    const { user_id } = req.params;
 
+    // Query user profile from the user_profile table using the user_id
+    const result = await pool.query(
+      'SELECT * FROM user_profile WHERE user_id = $1',
+      [user_id]
+    );
+
+    if (result.rows.length > 0) {
+      // User profile exists, return the profile data
+      res.status(200).json(result.rows[0]);
+    } else {
+      // User profile not found, create a default profile and return it
+      const defaultProfile = {
+        gender: 'Not specified',
+        address: 'Not specified',
+        major: 'Not specified',
+      };
+
+      const insertResult = await pool.query(
+        'INSERT INTO user_profile (user_id, gender, address, major) VALUES ($1, $2, $3, $4) RETURNING *',
+        [user_id, defaultProfile.gender, defaultProfile.address, defaultProfile.major]
+      );
+
+      res.status(200).json(insertResult.rows[0]);
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
+  }
+});
 
 // PUT route to handle updating or creating user profile
 router.put('/user-profile', async (req, res) => {
   try {
-    const { id, gender, address, major } = req.body;
+    const { user_id, gender, address, major } = req.body;
 
     // Check if user profile already exists
     const existingProfile = await pool.query(
@@ -443,7 +476,7 @@ router.put('/user-profile', async (req, res) => {
         'INSERT INTO user_profile (user_id, gender, address, major) VALUES ($1, $2, $3, $4) RETURNING *',
         [user_id, gender, address, major]
       );
-      res.status(200).json(result.rows[0]);
+      res.status(201).json(result.rows[0]);
     }
   } catch (error) {
     console.error(error);
@@ -451,5 +484,53 @@ router.put('/user-profile', async (req, res) => {
   }
 });
 
+router.post('/upload-avatar', upload.single('avatar'), async (req, res) => {
+  const userId = req.body.user_id; 
+  const image = req.file; 
+
+
+  if (!image) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  try {
+
+    const result = await pool.query(
+      'INSERT INTO avatar (user_id, image_data, image_type) VALUES ($1, $2, $3) RETURNING *',
+      [userId, image.buffer, image.mimetype]
+    );
+
+    return res.status(201).json({ message: 'Avatar uploaded successfully', avatar: result.rows[0] });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET route to fetch user avatar by user ID
+router.get('/user-avatar/:user_id', async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    // Query user avatar from the avatar table using the user_id
+    const result = await pool.query(
+      'SELECT image_data, image_type FROM avatar WHERE user_id = $1',
+      [user_id]
+    );
+
+    if (result.rows.length > 0) {
+      // User avatar exists, return the avatar data as an image
+      const avatar = result.rows[0];
+      res.setHeader('Content-Type', avatar.image_type);
+      res.status(200).send(avatar.image_data);
+    } else {
+      // User avatar not found
+      res.status(404).json({ message: 'User avatar not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
+  }
+});
 
 module.exports = router;

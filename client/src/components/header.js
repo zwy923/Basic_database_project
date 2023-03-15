@@ -26,6 +26,8 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jwtDecode from 'jwt-decode';
 import SearchDialog from './SerachDialog';
+import Profile from "./UserProfile"
+
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -98,17 +100,29 @@ export default function Header({ isLoggedIn, onLogout, token}) {
   const [open, setOpen] = React.useState(false);
   const [userName, setUserName] = React.useState('')
   const [userRole, setUserRole] = React.useState('')
+  const [userID,setUserID] = React.useState('')
   const [searchContent, setSearchContent] = React.useState('');
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [results, setResults] = React.useState([]);
+  const [profileOpen, setProfileOpen] = React.useState(false)
+
+  const handleProfileOpenDialog = () => {
+    setProfileOpen(true);
+  };
+
+  const handleProfileCloseDialog = () => {
+    setProfileOpen(false);
+  }
 
   useEffect(() => {
     if(token){
       const decodedToken = jwtDecode(token);
       const name = decodedToken.name
       const role = decodedToken.role
+      const userID = decodedToken._id
       setUserName(name)
       setUserRole(role)
+      setUserID(userID)
     }
   },[])
 
@@ -175,10 +189,15 @@ export default function Header({ isLoggedIn, onLogout, token}) {
     setMobileMoreAnchorEl(null);
   };
 
-  const handleProfileMenuClose = () => {
+  const handleAccountMenuClose = () => {
     setAnchor1(null);
     alert("User name: " + userName + "\nGroup: " + userRole)
   };
+
+  const handleProfileMenuClose = () => {
+    setAnchor1(null);
+    setProfileOpen(true)
+  }
 
   const handleOnclose = () => {
     setAnchor1(null);
@@ -219,7 +238,7 @@ export default function Header({ isLoggedIn, onLogout, token}) {
       onClose={handleOnclose}
     >
       <MenuItem onClick={handleProfileMenuClose}>Profile</MenuItem>
-      <MenuItem onClick={handleProfileMenuClose}>My account</MenuItem>
+      <MenuItem onClick={handleAccountMenuClose}>My account</MenuItem>
     </Menu>
   );
     
@@ -285,6 +304,7 @@ export default function Header({ isLoggedIn, onLogout, token}) {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
+      <Profile open={profileOpen} onClose={handleProfileCloseDialog} userId={userID}></Profile>
       <AppBar position="static" theme={theme}>
         <Toolbar>
           <IconButton

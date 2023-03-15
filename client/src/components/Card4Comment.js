@@ -19,7 +19,7 @@ import Button from '@mui/joy/Button/Button';
 import EditIcon from '@mui/icons-material/Edit'
 import jwtDecode from 'jwt-decode';
 
-const CommentCard = ({ comment, token, role}) => {
+const CommentCard =({ comment, token, role}) => {
   const { text, user_id, created_at, id} = comment;
   const [deleted, setDeleted] = useState(false);
   const [edited,setEdited] = useState(false)
@@ -27,18 +27,34 @@ const CommentCard = ({ comment, token, role}) => {
   const [editText, setEditText] = useState(text);
   const [userId,setUserID] = useState("")
   const [userName,setUserName] = useState('')
-  useEffect(() => {
+  const [avatar, setAvatar] = useState(null);
 
+  useEffect( () => {
 
-    if(token){
-      const decodedToken = jwtDecode(token);
-      if (decodedToken.exp < Date.now() / 1000) {
-        localStorage.removeItem('authToken')
-      } else {
-        setUserID(decodedToken._id)
+    const fetchUserAvatar = async () => {
+      if(token){
+        const decodedToken = jwtDecode(token);
+        if (decodedToken.exp < Date.now() / 1000) {
+          localStorage.removeItem('authToken')
+        } else {
+          setUserID(decodedToken._id)
+        }
+      }
+      const avatarResponse = await fetch(`http://localhost:1234/api/user/user-avatar/${userId}`);
+        if (avatarResponse.ok) {
+        const avatarBlob = await avatarResponse.blob();
+        setAvatar(URL.createObjectURL(avatarBlob));
       }
     }
     const fetchUserName = async () => {
+      if(token){
+        const decodedToken = jwtDecode(token);
+        if (decodedToken.exp < Date.now() / 1000) {
+          localStorage.removeItem('authToken')
+        } else {
+          setUserID(decodedToken._id)
+        }
+      }
       const response = await fetch(`http://localhost:1234/api/user/getusername`,{
         method:'post',
         headers: {
@@ -52,7 +68,7 @@ const CommentCard = ({ comment, token, role}) => {
     };
 
     fetchUserName();
-
+    fetchUserAvatar()
   },[])
 
   const handleEditClick = () => {
@@ -127,8 +143,7 @@ const CommentCard = ({ comment, token, role}) => {
     variant="outlined"
     sx={{ bgcolor: 'background.body' }}>
         <Box margin={1} sx={{ display: 'flex', gap: 1.5, mt: 1 ,mb:0} }>
-            <Avatar variant="soft" color="neutral">
-              
+            <Avatar variant="soft" color="neutral" alt="User Avatar" src={avatar}>
             </Avatar>
             <div>
               <Typography level="body2">by</Typography>
