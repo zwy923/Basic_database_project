@@ -8,6 +8,9 @@ The version of nodejs we used is v19.3, if you don't have node.js installed:
 [node.js Installation instruction](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 Don't worry it's very simple:)
 
+You can click "1. Click here install dependency. bat"file to install dependency.  
+If it doesn't work or there is a problem, please try👇  
+
 Enter the root directory, and open a terminal
 ```
 npm install
@@ -19,6 +22,9 @@ npm install
 You can adjust the PostgreSQL connection parameters in the beginning of the /server/api/index.js and user.js files.
 
 ### Run :running:
+
+You can click "2. Click here to start server.bat"file to run app.  
+If it doesn't work or there is a problem, please try👇  
 Start the server
 ```
 npm run dev:server
