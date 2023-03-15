@@ -252,6 +252,7 @@ router.get('/codesnippets', async (req, res) => {
       SELECT code_snippets.*, users.name AS user_name
       FROM code_snippets
       JOIN users ON code_snippets.user_id = users.id
+      ORDER BY code_snippets.updated_at DESC
     `);
 
     // Return the snippets as a JSON response
