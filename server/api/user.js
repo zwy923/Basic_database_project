@@ -344,34 +344,53 @@ router.put('/comments/:id', validateToken, async (req, res) => {
 router.delete('/comments/:id', validateToken, async (req, res) => {
   const commentId = req.params.id;
   const userId = req.user._id;
-
-  try {
-
-    // Begin a transaction
-    await pool.query('BEGIN');
-
-    // Check if the comment belongs to the authenticated user
-    const commentResult = await pool.query('SELECT * FROM comments WHERE id=$1 AND user_id=$2', [commentId, userId]);
-    if (commentResult.rows.length === 0) {
-      res.status(404).json({ error: 'Comment not found or unauthorized to delete' });
-      return;
+  if(req.user.role === admin){
+    try {
+      // Begin a transaction
+      await pool.query('BEGIN');
+      // Check if the comment belongs to the authenticated user
+      const commentResult = await pool.query('SELECT * FROM comments WHERE id=$1', [commentId]);
+      if (commentResult.rows.length === 0) {
+        res.status(404).json({ error: 'Comment not found or unauthorized to delete' });
+        return;
+      }
+      // Delete the comment
+      await pool.query('DELETE FROM comments WHERE id=$1', [commentId]);
+      // Commit the transaction
+      await pool.query('COMMIT');
+      // Send a success message
+      res.json({ message: 'Comment deleted successfully' });
+    } catch (error) {
+      // Rollback the transaction in case of error
+      await pool.query('ROLLBACK'); 
+      // Log error to console and send 500 status code with a message
+      console.error(error);
+      res.status(500).json({ message: 'Internal server error.' });
     }
-
-    // Delete the comment
-    await pool.query('DELETE FROM comments WHERE id=$1', [commentId]);
-
-    // Commit the transaction
-    await pool.query('COMMIT');
-
-    // Send a success message
-    res.json({ message: 'Comment deleted successfully' });
-  } catch (error) {
-    // Rollback the transaction in case of error
-    await pool.query('ROLLBACK'); 
-
-    // Log error to console and send 500 status code with a message
-    console.error(error);
-    res.status(500).json({ message: 'Internal server error.' });
+  }
+  else{
+    try {
+      // Begin a transaction
+      await pool.query('BEGIN');
+      // Check if the comment belongs to the authenticated user
+      const commentResult = await pool.query('SELECT * FROM comments WHERE id=$1 AND user_id=$2', [commentId, userId]);
+      if (commentResult.rows.length === 0) {
+        res.status(404).json({ error: 'Comment not found or unauthorized to delete' });
+        return;
+      }
+      // Delete the comment
+      await pool.query('DELETE FROM comments WHERE id=$1', [commentId]);
+      // Commit the transaction
+      await pool.query('COMMIT');
+      // Send a success message
+      res.json({ message: 'Comment deleted successfully' });
+    } catch (error) {
+      // Rollback the transaction in case of error
+      await pool.query('ROLLBACK'); 
+      // Log error to console and send 500 status code with a message
+      console.error(error);
+      res.status(500).json({ message: 'Internal server error.' });
+    }
   }
 });
 
