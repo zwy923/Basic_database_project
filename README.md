@@ -29,4 +29,4 @@ Click here to log in. You cannot comment or post codeSnippet without logging in.
 ![signup](./public/img/signup.png)
 
 Sign up interface.
-Please note that your password type must be a strong password combination (at least one uppercase and lowercase letter, and contain numbers and special symbols) 
+:kissing_smiling_eyes:Please note that your password type must be a strong password combination (at least one uppercase and lowercase letter, and contain numbers and special symbols) 
