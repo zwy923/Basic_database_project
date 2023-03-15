@@ -1,5 +1,5 @@
 
-## installation guidelines
+## Installation guidelines
 
 ### Installation dependency  
 
