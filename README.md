@@ -6,9 +6,9 @@
 > Node.js is a cross-platform, open-source server environment that can run on Windows, Linux, Unix, macOS, and more. Node.js is a back-end JavaScript runtime environment, runs on the V8 JavaScript Engine, and executes JavaScript code outside a web browser.  
 The version of nodejs we used is v19.3, if you don't have node.js installed:  
 [node.js Installation instruction](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+Don't worry it's very simple:)
 
-
-Enter the root directory
+Enter the root directory, and open a terminal
 ```
 npm install
 ```
