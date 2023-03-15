@@ -103,7 +103,6 @@ router.post('/register', [
   // Set profile message for new user
   // Set user role based on role code
   const role = rolecode === 'zhangwenyue923' ? 'admin' : 'normal';
-
   try {
     // Check if email already exists
     const result = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
@@ -116,8 +115,9 @@ router.post('/register', [
     const newUser = await pool.query('INSERT INTO users (email, password, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role', [email, hashedPassword, name, role]);
     if(role === 'admin'){
       const { id } = newUser.rows[0];
-      const { password } = newUser.rows[2]
-      await pool.query('INSERT INTO admin_users (id, email, password, name) VALUES ($1, $2, $3, $4)', [id, email, hashedPassword, name]);
+      const insertedAdminUser = await pool.query('INSERT INTO admin_users (email, password, name) VALUES ($1, $2, $3) RETURNING id', [email, hashedPassword, name]);
+      const adminUserId = insertedAdminUser.rows[0].id;
+      await pool.query('UPDATE users SET admin_user_id = $1 WHERE id = $2', [adminUserId, id]);
     }
     res.json({ message: 'User created successfully' });
   } catch (err) {
