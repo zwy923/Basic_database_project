@@ -13,7 +13,12 @@ Enter the root directory, and open a terminal
 npm install
 ```
 
-### Run
+### Configuring database connections :elephant:
+
+![pool Configuratio](./public/img/poolmodify.png)
+You can adjust the PostgreSQL connection parameters in the beginning of the /server/api/index.js and user.js files.
+
+### Run :running:
 Start the server
 ```
 npm run dev:server
