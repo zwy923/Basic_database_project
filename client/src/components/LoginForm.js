@@ -59,6 +59,7 @@ const LoginForm = ({onLoginSuccess}) => {
         setError(<Alert severity="success">successfull, logging in...</Alert>)
         onLoginSuccess(data.token)
         navigate('/')
+        window.location.reload()
       } else {
         setError(<Alert severity="error">{data.error}</Alert>);
       }
