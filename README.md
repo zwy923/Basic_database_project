@@ -8,7 +8,6 @@ The version of nodejs we used is v19.3, if you don't have node.js installed:
 [node.js Installation instruction](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 
 
-
 Enter the root directory
 ```
 npm install
