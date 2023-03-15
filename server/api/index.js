@@ -19,7 +19,7 @@ router.get('/', function(req, res, next) {
 router.get('/search', async (req, res, next) => {
     const content = req.query.content;
     try {
-      const searchUsers = `SELECT name, email, role, profile FROM users WHERE name ILIKE '%${content}%' OR email ILIKE '%${content}%'`;
+      const searchUsers = `SELECT name, email, role FROM users WHERE name ILIKE '%${content}%' OR email ILIKE '%${content}%'`;
       const searchSnippets = `SELECT * FROM code_snippets WHERE title ILIKE '%${content}%' OR description ILIKE '%${content}%' OR tags::text ILIKE '%${content}%'`;
   
       const usersResult = await pool.query(searchUsers);
