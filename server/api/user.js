@@ -101,7 +101,6 @@ router.post('/register', [
   // Get email, password, name, and role code from request body
   const { email, password, name, rolecode } = req.body;
   // Set profile message for new user
-  const profile = "This user is very lazy and hasn't left a profile :)";
   // Set user role based on role code
   const role = rolecode === 'zhangwenyue923' ? 'admin' : 'normal';
 
@@ -114,11 +113,11 @@ router.post('/register', [
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
     // Insert the new user into the database
-    const newUser = await pool.query('INSERT INTO users (email, password, name, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, name, role', [email, hashedPassword, name, role]);
+    const newUser = await pool.query('INSERT INTO users (email, password, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role', [email, hashedPassword, name, role]);
     if(role === 'admin'){
       const { id } = newUser.rows[0];
       const { password } = newUser.rows[2]
-      await pool.query('INSERT INTO admin_users (id, email, password, name, role) VALUES ($1, $2, $3, $4, $5, $6)', [id, email, password, name, role]);
+      await pool.query('INSERT INTO admin_users (id, email, password, name) VALUES ($1, $2, $3, $4)', [id, email, hashedPassword, name]);
     }
     res.json({ message: 'User created successfully' });
   } catch (err) {
