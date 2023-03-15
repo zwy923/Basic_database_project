@@ -115,7 +115,7 @@ router.post('/register', [
     const newUser = await pool.query('INSERT INTO users (email, password, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role', [email, hashedPassword, name, role]);
     if(role === 'admin'){
       const { id } = newUser.rows[0];
-      const insertedAdminUser = await pool.query('INSERT INTO admin_users (email, password, name) VALUES ($1, $2, $3) RETURNING id', [email, hashedPassword, name]);
+      const insertedAdminUser = await pool.query('INSERT INTO admin_users (email, name, password) VALUES ($1, $2, $3) RETURNING \"id\"', [email, name, hashedPassword]);
       const adminUserId = insertedAdminUser.rows[0].id;
       await pool.query('UPDATE users SET admin_user_id = $1 WHERE id = $2', [adminUserId, id]);
     }
@@ -124,6 +124,7 @@ router.post('/register', [
     console.log(err);
     res.status(500).json({ error: 'something went wrong' });
   }
+  
 });
 
 
