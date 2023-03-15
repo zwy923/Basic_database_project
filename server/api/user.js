@@ -316,7 +316,7 @@ router.put('/comments/:id', validateToken, async (req, res) => {
   // Extract the comment ID and text from the request
   const commentId = req.params.id;
   const text = req.body.text;
-
+  
   try {
     // Update the comment with the given ID
     const result = await pool.query(
